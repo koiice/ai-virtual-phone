@@ -3,6 +3,7 @@
 
 import type { MomentPost, MomentComment, AIMomentSchedule, PendingReaction } from "./moments-types";
 import { loadCharacters } from "./character-storage";
+import { emitChatPluginEvent } from "./chat-plugin-hooks";
 import { kvGet, kvSet, registerKvMigration } from "./kv-db";
 import { DEFAULT_MOMENTS_BILINGUAL_PROMPT } from "./bilingual-prompt-defaults";
 import { canCharacterSeeMomentPost, getVisibleMomentCommentsForCharacter } from "./character-world-storage";
@@ -112,7 +113,15 @@ export function addMomentPost(post: Omit<MomentPost, "id" | "likes" | "createdAt
         createdAt: new Date().toISOString(),
     };
     _postsCache = [newPost, ...loadMomentPosts()]; // newest first
-    dbPutPost(newPost);
+    dbPutPost(newPost, () => {
+        if (newPost.authorType === "character" && newPost.content.trim()) {
+            emitChatPluginEvent("moment.persisted", {
+                id: newPost.id,
+                authorId: newPost.authorId,
+                content: newPost.content,
+            });
+        }
+    });
     return newPost;
 }
 
