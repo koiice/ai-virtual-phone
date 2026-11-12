@@ -42,8 +42,10 @@ export async function initMomentsDb(): Promise<{ posts: MomentPost[]; comments: 
 
 // ── Per-record persistence (fire-and-forget) ──
 
-export function dbPutPost(post: MomentPost): void {
-    momentsDb.posts.put(post).catch(err => console.warn("[MomentsDB] put post failed:", err));
+export function dbPutPost(post: MomentPost, onSaved?: () => void): void {
+    momentsDb.posts.put(post)
+        .then(() => onSaved?.())
+        .catch(err => console.warn("[MomentsDB] put post failed:", err));
 }
 
 export function dbDeletePost(id: string): void {

@@ -137,6 +137,7 @@ export type ChatPluginEventPoint =
     | "app.ready"
     | "session.opened"
     | "message.persisted"
+    | "moment.persisted"
     | "message.updated"
     | "message.deleted"
     | "llm.streamChunk"
@@ -146,6 +147,7 @@ export type ChatPluginEventPayloadMap = {
     "app.ready": Record<string, never>;
     "session.opened": { sessionId: string; isGroup: boolean };
     "message.persisted": { message: ChatMessage };
+    "moment.persisted": { id: string; authorId: string; content: string };
     "message.updated": { id: string; patch: Partial<ChatMessage> };
     "message.deleted": { id: string; sessionId?: string };
     "llm.streamChunk": { chunk: string; sessionId?: string; purpose: string };
