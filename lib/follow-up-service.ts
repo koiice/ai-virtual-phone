@@ -318,7 +318,7 @@ async function saveBackgroundCompletionRounds(
     currentCount: number,
     followUpIndex: number | undefined,
     contextMessages: ChatMessage[],
-    options?: { senderCharacterId?: string; senderName?: string; silent?: boolean },
+    options?: { senderCharacterId?: string; senderName?: string; silent?: boolean; forwardTimedWake?: boolean },
 ): Promise<{ hasVisible: boolean; newCount: number; stateValues: StateValue[] }> {
     let hasVisible = false;
     let newCount = currentCount;
@@ -668,6 +668,7 @@ async function fireTimedWake(sched: TimedWakeSchedule) {
             0,
             undefined,
             latestMessages,
+            { forwardTimedWake: true },
         );
         console.log(`[TimedWake] Result: hasVisible=${hasVisible}`);
 
@@ -882,6 +883,7 @@ export async function parseAndSaveResponse(
         senderCharacterId?: string;
         senderName?: string;
         silent?: boolean;
+        forwardTimedWake?: boolean;
         responseBatchId?: string;
         /** 离线回端时沿用云端生成时间，避免多轮补账被“当前时间”打乱因果顺序。 */
         createdAt?: string;
@@ -1091,6 +1093,13 @@ export async function parseAndSaveResponse(
     if (markerPartIdx >= filteredParts.length) saveShortcutMarkerPair();
 
     await dispatchBackgroundMessagesOneByOne(sessionId, savedMessages, options?.silent === true);
+    if (options?.forwardTimedWake) {
+        for (const message of savedMessages) {
+            if (message.role === "assistant" && (!message.mediaType || message.mediaType === "text") && message.content.trim()) {
+                window.dispatchEvent(new CustomEvent("float-cove-timed-wake", { detail: { sessionId, message } }));
+            }
+        }
+    }
     if (imageReplacementTasks.length > 0) {
         await Promise.allSettled(imageReplacementTasks);
     }
